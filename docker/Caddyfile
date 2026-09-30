@@ -1,0 +1,47 @@
+{
+	admin off
+	auto_https disable_redirects
+	log {
+		level ERROR
+	}
+}
+
+# Host publishes these cleartext listeners on 127.0.0.1 only. No access log is
+# enabled. Preserve Host so broker hostname/origin checks validate the caller.
+http://:3214 {
+	@agent path /mcp /health
+	handle @agent {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle {
+		respond 404
+	}
+}
+
+http://:3215 {
+	reverse_proxy 127.0.0.1:3211
+}
+
+# Owner/device endpoint; requires installation of the public local CA on the
+# physical approval device. This listener does not expose the agent MCP API.
+https://{$BROKER_TLS_HOST}:8443, https://{$BROKER_TLS_IP}:8443 {
+	tls /certs/leaf.crt /certs/server.key
+	reverse_proxy 127.0.0.1:3211
+}
+
+# Installation files contain only the public CA and certificate-only profile.
+# Parent .local/, transport tokens, leaf/CA private keys are never mounted here.
+http://:8080 {
+	@profile path /broker-development-ca.mobileconfig
+	header @profile Content-Type application/x-apple-aspen-config
+	@rootCertificate path /broker-root-ca.crt
+	header @rootCertificate Content-Type application/x-x509-ca-cert
+	@ca path /broker-root-ca.crt /broker-development-ca.mobileconfig
+	handle @ca {
+		root * /public
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}

@@ -1,0 +1,138 @@
+# Synthetic development only. No Docker socket, host browser profile or real
+# vault credentials enter these containers. Rootless Chromium sandbox stays on.
+name: boring-login-local
+services:
+  postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: boring_broker
+      POSTGRES_DB: boring_login
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/docker-bootstrap.mjs first}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [metadata]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U boring_broker -d boring_login]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    security_opt: [no-new-privileges:true]
+
+  broker:
+    build: .
+    image: boring-login:synthetic-local
+    restart: unless-stopped
+    init: true
+    user: '${BROKER_UID:?Run Docker bootstrap}:${BROKER_GID:?Run Docker bootstrap}'
+    shm_size: 1gb
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=./docker/chromium-seccomp.json
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=512m,mode=1777
+    environment:
+      DATABASE_URL: postgresql://boring_broker:${POSTGRES_PASSWORD}@postgres:5432/boring_login
+      BROKER_CONFIG: /app/state/broker.json
+      BROKER_HOST: 127.0.0.1
+      BROKER_PORT: '3210'
+      BROKER_ADMIN_PORT: '3211'
+      BROKER_ALLOWED_HOSTNAMES: ${BROKER_ALLOWED_HOSTNAMES:-127.0.0.1,localhost}
+    volumes:
+      - ./.local/state:/app/state
+    # Caddy shares this network namespace and binds these *container* ports.
+    # The application itself continues listening only on container loopback.
+    ports:
+      - '127.0.0.1:${BROKER_AGENT_PORT:-3210}:3214'
+      - '127.0.0.1:${BROKER_OWNER_PORT:-3211}:3215'
+      - '${BROKER_TLS_BIND:-127.0.0.1}:${BROKER_TLS_PORT:-8443}:8443'
+      - '${BROKER_TLS_BIND:-127.0.0.1}:${BROKER_CA_PORT:-8080}:8080'
+    networks: [metadata, ingress]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3210/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+
+  tls:
+    build:
+      context: .
+      dockerfile: docker/Caddy.Dockerfile
+    image: boring-login:synthetic-tls
+    restart: unless-stopped
+    network_mode: service:broker
+    user: '${BROKER_UID}:${BROKER_GID}'
+    depends_on:
+      broker:
+        condition: service_healthy
+        restart: true
+    environment:
+      BROKER_TLS_HOST: ${BROKER_TLS_HOST:-localhost}
+      BROKER_TLS_IP: ${BROKER_TLS_IP:-127.0.0.1}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=32m,mode=1777
+      - /data:rw,nosuid,nodev,size=32m,uid=${BROKER_UID},gid=${BROKER_GID},mode=0700
+      - /config:rw,nosuid,nodev,size=8m,uid=${BROKER_UID},gid=${BROKER_GID},mode=0700
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.local/tls/leaf.crt:/certs/leaf.crt:ro
+      - ./.local/tls/server.key:/certs/server.key:ro
+      - ./.local/tls/public:/public:ro
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          'wget -q --spider http://127.0.0.1:8080/broker-root-ca.crt && wget -q --spider --no-check-certificate --header="Host: $${BROKER_TLS_HOST}:8443" https://127.0.0.1:8443/',
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  postgres-tests:
+    profiles: [test]
+    build:
+      context: .
+      target: development
+    image: boring-login:synthetic-tests
+    init: true
+    user: '${BROKER_UID}:${BROKER_GID}'
+    environment:
+      DATABASE_URL: postgresql://boring_broker:${POSTGRES_PASSWORD}@postgres:5432/boring_login
+      BORING_LOGIN_POSTGRES_TEST: '1'
+    networks: [metadata]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: [npm, exec, --, vitest, run, tests/full-postgres.test.ts]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m,mode=1777
+      - /app/node_modules/.vite-temp:rw,nosuid,nodev,size=32m,uid=${BROKER_UID},gid=${BROKER_GID},mode=0700
+      - /app/node_modules/.vite:rw,nosuid,nodev,size=128m,uid=${BROKER_UID},gid=${BROKER_GID},mode=0700
+
+networks:
+  metadata:
+    internal: true
+  ingress:
+
+volumes:
+  postgres-data:

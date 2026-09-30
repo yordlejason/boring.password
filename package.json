@@ -1,0 +1,41 @@
+{
+  "name": "boring-login",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
+  "scripts": {
+    "dev": "tsx apps/broker/src/main.ts",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:core": "vitest run tests/core",
+    "test:browser": "vitest run tests/worker",
+    "check": "npm run typecheck && npm test && npm run build",
+    "demo": "tsx scripts/demo.ts",
+    "bootstrap": "tsx scripts/bootstrap.ts",
+    "onboard": "node scripts/onboard.mjs",
+    "migrate": "tsx scripts/migrate.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "2.1.0",
+    "@modelcontextprotocol/server": "2.2.0",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "playwright": "1.63.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@modelcontextprotocol/client": "2.1.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.2"
+  }
+}

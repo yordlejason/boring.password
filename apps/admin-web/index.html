@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>boring.login · Owner console</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="app-header">
+        <a class="brand" href="/">boring<span>.login</span></a>
+        <div class="header-actions">
+          <span id="connection-status" class="connection-status" role="status" hidden></span>
+          <button id="disconnect" class="quiet" hidden>Disconnect</button>
+        </div>
+      </header>
+      <section id="connect" class="connect panel">
+        <span class="eyebrow">Owner console</span>
+        <h1>Your approval inbox.</h1>
+        <p>Connect once, then review login requests on your iPhone.</p>
+        <form id="connect-form">
+          <label for="token">Owner token</label>
+          <div class="row">
+            <input id="token" type="password" required autocomplete="off" spellcheck="false" />
+            <button id="connect-button" type="submit">Connect</button>
+          </div>
+          <p class="hint">Your token stays in this tab’s memory.</p>
+        </form>
+      </section>
+      <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+      <div id="dashboard" hidden>
+        <section id="setup" class="panel setup" hidden>
+          <div class="section-heading">
+            <div>
+              <h2 id="setup-title">Pair your iPhone</h2>
+              <p id="setup-description">
+                Your iPhone reviews each request and signs your approval.
+              </p>
+            </div>
+            <button id="setup-pair">Pair iPhone</button>
+          </div>
+          <div id="pending-devices"></div>
+        </section>
+        <section id="policies" class="mode-section" aria-label="Approval mode"></section>
+        <section class="inbox" aria-label="Current requests">
+          <h2 class="section-title">Requests</h2>
+          <div id="requests"></div>
+        </section>
+        <details id="history" class="disclosure">
+          <summary>Activity <span id="history-count" class="count">0</span></summary>
+          <div id="recent-requests" class="disclosure-content"></div>
+        </details>
+        <details id="settings" class="disclosure">
+          <summary>Devices <span id="settings-summary" class="summary-note"></span></summary>
+          <div class="disclosure-content">
+            <section class="settings-section">
+              <div class="section-heading">
+                <div>
+                  <h2>Approval devices</h2>
+                  <p class="hint">Only owner-confirmed devices can approve requests.</p>
+                </div>
+                <button id="pair" class="secondary">Pair another iPhone</button>
+              </div>
+              <div id="devices"></div>
+            </section>
+          </div>
+        </details>
+        <section id="pairing" class="panel pairing" hidden>
+          <div class="section-heading">
+            <div>
+              <h2>Connect Broker Approval</h2>
+              <p>
+                Enter this one-use code in the iPhone app. Then compare its approval-key fingerprint
+                here.
+              </p>
+            </div>
+            <button id="hide-pairing" class="quiet">Hide code</button>
+          </div>
+          <label for="pairing-code">Private pairing code</label>
+          <div class="row">
+            <input
+              id="pairing-code"
+              type="password"
+              readonly
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="copy-pairing" class="secondary">Copy code</button>
+            <button id="reveal-pairing" class="quiet" aria-pressed="false">Show</button>
+          </div>
+          <p id="pairing-expiry" class="hint"></p>
+        </section>
+      </div>
+      <footer>Synthetic accounts only. Real credentials are disabled.</footer>
+    </main>
+  </body>
+</html>

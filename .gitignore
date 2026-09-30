@@ -1,0 +1,66 @@
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+.cache/
+*.tsbuildinfo
+
+# Private configuration and broker state
+.local/
+.codex/
+.env
+.env.*
+*.env
+!.env.example
+.npmrc
+.mcp.local.json
+.secrets/
+**/owner-token
+**/client-token
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Local certificates, signing material, and provisioning
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.keystore
+*.mobileprovision
+*.provisionprofile
+*.mobileconfig
+
+# Browser sessions and local verification artifacts
+playwright-report/
+test-results/
+screenshots/
+docs/evidence/
+*.log
+*.trace
+*.har
+trace*.zip
+auth-storage*.json
+storage-state*.json
+storageState*.json
+
+# Xcode and Swift build/user state
+apps/ios-approval/build/
+**/.build/
+**/.swiftpm/
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xcarchive/
+*.app/
+*.ipa
+*.dSYM/
+
+# Operating-system files
+.DS_Store
+._*
+Thumbs.db

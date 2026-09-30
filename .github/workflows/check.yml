@@ -1,0 +1,23 @@
+name: Synthetic security checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  broker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check
+      - run: npm audit --omit=dev
+  apple-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native approval source without device signing
+        run: xcodebuild build -project apps/ios-approval/BrokerApproval.xcodeproj -scheme BrokerApproval -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
